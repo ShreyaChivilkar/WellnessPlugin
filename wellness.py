@@ -1,5 +1,6 @@
 from datetime import datetime, time, timedelta
 import random
+import requests
 
 WELLNESS_MESSAGES = {
     "morning": {
@@ -72,6 +73,22 @@ def get_duration_bucket(start: datetime, end: datetime) -> str:
     else:
         return "long"
 
+def get_quote_of_the_day(api_key=None):
+    """
+    Fetches the quote of the day from ZenQuotes API and returns the 'q' (quote) part.
+    :param api_key: (optional) Your ZenQuotes API key as a string.
+    :return: Quote of the day as a string, or None if failed.
+    """
+    url = f'https://zenquotes.io/api/today/{api_key}' if api_key else 'https://zenquotes.io/api/today'
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        return data[0]['q']
+    except Exception as e:
+        print("Error fetching quote:", e)
+        return None
+
 def pick_wellness_message(slot_start: datetime, slot_end: datetime) -> str:
     tod = get_time_of_day(slot_start)
     duration_bucket = get_duration_bucket(slot_start, slot_end)
@@ -80,7 +97,7 @@ def pick_wellness_message(slot_start: datetime, slot_end: datetime) -> str:
         return "Take a short break and recharge!"  # Fallback message
     return random.choice(messages)
 
-def find_free_slots(events, work_start=time(9,0), work_end=time(22,0)):
+def find_free_slots(events, work_start=time(8,0), work_end=time(22,0)):
     if not events:
         # No events, whole workday is free
         today = datetime.now().date()

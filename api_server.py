@@ -4,11 +4,14 @@ from datetime import datetime
 from mycalendar.dummy_calendar import get_events_for_today
 from wellness import find_free_slots, pick_wellness_message
 from notifications.teams_notifier_stub import send_notification
+from wellness import get_quote_of_the_day
+from datetime import datetime, time
 
 app = Flask(__name__)
 CORS(app)
 
 notified_slots = set()
+last_quote_sent_date = None
 
 @app.route('/notify', methods=['GET'])
 def notify():
@@ -17,7 +20,24 @@ def notify():
     end = request.args.get('end')
     message = request.args.get('message')
 
-    if start and end:
+    global last_quote_sent_date
+    now = datetime.now()
+    today = now.date()
+    if now.time() < time(12, 0) and last_quote_sent_date != today:
+        quote = get_quote_of_the_day()
+        if quote:
+            print("insideee")
+            slot = (now, now)
+            send_notification(slot, f"🌞 Quote of the Day:\n{quote}")
+            last_quote_sent_date = today
+            return jsonify({
+                "status": "Quote notification sent",
+                "date": today.isoformat(),
+                "slot_start": slot[0].isoformat(),
+                "slot_end": slot[1].isoformat(),
+                "msg": quote
+            })
+    elif start and end:
         try:
             slot = (datetime.fromisoformat(start), datetime.fromisoformat(end))
         except Exception as e:
