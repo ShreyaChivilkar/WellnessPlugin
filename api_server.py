@@ -1,10 +1,13 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from datetime import datetime
 from mycalendar.dummy_calendar import get_events_for_today
 from wellness import find_free_slots, pick_wellness_message
 from notifications.teams_notifier_stub import send_notification
 
 app = Flask(__name__)
+CORS(app)
+
 notified_slots = set()
 
 @app.route('/notify', methods=['GET'])
@@ -38,7 +41,7 @@ def notify():
         slot_key = (slot[0].isoformat(), slot[1].isoformat())
         notified_slots.add(slot_key)
 
-    msg = message if message else pick_wellness_message()
+    msg = message if message else pick_wellness_message(slot[0], slot[1])
     send_notification(slot, msg)
     return jsonify({
         "status": "Notification sent",
